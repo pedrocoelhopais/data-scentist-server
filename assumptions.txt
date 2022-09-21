@@ -1,0 +1,5 @@
+- "Environment"  in the problem statement is talking about a computing space that contains anything the employee needs
+- The environment does not sound emphemeral, considering it's dealing with persisent data storage (SQL)
+    - I would say ideally it'd be split per workload, so SQL, Rails and Python workloads would be deployed separately
+- Python 3 is being used, and not 2
+- "Login to a linux shell on the server" SSH or Systems Manager
