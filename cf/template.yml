@@ -1,0 +1,222 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: 'Cloudformation for provisioning services required to setup the CI/CD using GitHub actions and CodeDeploy.'
+ 
+Parameters:
+  VpcCIDR:
+    Description: Please enter the IP range (CIDR notation) for this VPC
+    Type: String
+    Default: 10.0.0.0/16
+
+  PublicSubnetACIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the first Availability Zone
+    Type: String
+    Default: 10.0.0.0/24
+
+  # PublicSubnetBCIDR:
+  #   Description: Please enter the IP range (CIDR notation) for the public subnet in the second Availability Zone
+  #   Type: String
+  #   Default: 10.0.1.0/24
+
+  # PrivateSubnetACIDR:
+  #   Description: Please enter the IP range (CIDR notation) for the private subnet in the first Availability Zone
+  #   Type: String
+  #   Default: 10.0.2.0/24
+
+  # PrivateSubnetBCIDR:
+  #   Description: Please enter the IP range (CIDR notation) for the private subnet in the second Availability Zone
+  #   Type: String
+  #   Default: 10.0.3.0/24
+
+  AmiID:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+    Description: The ID of the AMI.
+
+  KeyPairName:
+    Type: String
+    Default: pedro-key-pair
+    Description: The name of an existing Amazon EC2 key pair in this region to use to SSH into the Amazon EC2 instances.
+
+  InstanceType:
+    Type: String
+    Default: t2.micro
+    Description: The type of Amazon EC2 Linux instances that will be launched for this project.
+
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref PublicSubnetACIDR
+      MapPublicIpOnLaunch: true
+
+  # PublicSubnetB:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     VpcId: !Ref VPC
+  #     AvailabilityZone: !Select [ 1, !GetAZs  '' ]
+  #     CidrBlock: !Ref PublicSubnetBCIDR
+  #     MapPublicIpOnLaunch: true
+
+  # PrivateSubnetA:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     VpcId: !Ref VPC
+  #     AvailabilityZone: !Select [ 0, !GetAZs  '' ]
+  #     CidrBlock: !Ref PrivateSubnetACIDR
+
+  # PrivateSubnetB:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     VpcId: !Ref VPC
+  #     AvailabilityZone: !Select [ 1, !GetAZs  '' ]
+  #     CidrBlock: !Ref PrivateSubnetBCIDR
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetA
+      RouteTableId: !Ref PublicRouteTable
+
+  # PublicSubnetBRouteTableAssociation:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     SubnetId: !Ref PublicSubnetB
+  #     RouteTableId: !Ref PublicRouteTable
+
+  # NatA :
+  #   Type: AWS::EC2::NatGateway
+  #   Properties:
+  #     AllocationId: !GetAtt EipA.AllocationId
+  #     SubnetId: !Ref PublicSubnetA
+
+  # EipA:
+  #   Type: AWS::EC2::EIP
+  #   DependsOn: InternetGatewayAttachment
+  #   Properties:
+  #     Domain: vpc
+  #     InstanceId: !Ref Instance
+
+  # NatB:
+  #   Type: AWS::EC2::NatGateway
+  #   Properties:
+  #     AllocationId: !GetAtt EipB.AllocationId
+  #     SubnetId: !Ref PublicSubnetB
+
+  # EipB:
+  #   DependsOn: InternetGatewayAttachment
+  #   Type: AWS::EC2::EIP
+  #   Properties:
+  #       Domain: vpc
+  #       InstanceId: !Ref Instance
+
+  # PrivateRouteTableA:
+  #   Type: AWS::EC2::RouteTable
+  #   Properties:
+  #     VpcId: !Ref VPC
+
+  # PrivateRouteTableB:
+  #   Type: AWS::EC2::RouteTable
+  #   Properties:
+  #     VpcId: !Ref VPC
+
+  # NatRouteA:
+  #   Type: AWS::EC2::Route
+  #   Properties:
+  #     RouteTableId: !Ref PrivateRouteTableA
+  #     DestinationCidrBlock: 0.0.0.0/0
+  #     NatGatewayId: !Ref NatA
+
+  # PrivateSubnetARouteTableAssociation:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     SubnetId: !Ref PrivateSubnetA
+  #     RouteTableId: !Ref PrivateRouteTableA
+
+  # NatRoutB:
+  #   Type: AWS::EC2::Route
+  #   Properties:
+  #     RouteTableId: !Ref PrivateRouteTableB
+  #     DestinationCidrBlock: 0.0.0.0/0
+  #     NatGatewayId: !Ref NatA
+
+  # PrivateSubnetBRouteTableAssociation:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     SubnetId: !Ref PrivateSubnetB
+  #     RouteTableId: !Ref PrivateRouteTableB
+
+  Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AmiID
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyPairName
+      SubnetId: !Ref PublicSubnetA
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+      UserData: 
+        Fn::Base64: 
+          !Sub |
+            #!/usr/bin/env bash
+            sudo yum update -y
+            sudo amazon-linux-extras install -y docker
+            sudo service docker start
+            sudo systemctl enable docker
+            sudo usermod -a -G docker ec2-user
+
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Allow HTTP/HTTPS and SSH inbound and outbound traffic, and opens 8080 for apps"
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
