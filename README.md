@@ -6,6 +6,8 @@
 ## Important
 The following steps require you to have AWS auhtentication to the account you will be interacting with. Please ensure you are logged in with that account, and your `$HOME/.aws/credentials` file has the correct authentication.
 
+If you are forking this repo, you will need to set up `secrets` appropriately so the github actions pipeline can still deploy. Please go to `Settings>Secrets>Actions` and ensure the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are connected to an IAM user of your choice to deploy to your desired accounts.
+
 ## Quickstart
 You will be creating an instance with Python capabilities.
 
@@ -17,7 +19,7 @@ __DO NOT PUSH THE PEM FILE INTO THE REMOTE REPO__, the git ignore should stop yo
 
 To create the instance, run the following from your root:
 ```
-aws cloudformation create-stack --stack-name <name your stack> --template-body file://cf/template.yml --
+aws cloudformation create-stack --stack-name <name your stack> --template-body file://cf/template.yml --parameter-overrides "KeyPairName=<key-pair-name-in-aws>"
 ```
 
 ## Assume into your instance
