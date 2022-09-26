@@ -196,6 +196,9 @@ Resources:
             sudo service docker start
             sudo systemctl enable docker
             sudo usermod -a -G docker ec2-user
+            sudo amazon-linux-extras install -y ruby3.0
+            sudo yum install -y ruby-devel gcc
+            gem install rails
 
 
   SecurityGroup:
