@@ -23,7 +23,7 @@ aws cloudformation create-stack --stack-name <name your stack> --template-body f
 ```
 
 ## Assume into your instance
-Once deployed, you can assume into your instance with SSH. 
+Once deployed, you can assume into your instance with SSH. Please note, the state of the instance might say `Running`, but the installation of our dependencies via `User data` might still be happening on the background, so if you assume into it and anything is missing, give it some time.
 
 #ADD PICTURES HERE
 
